@@ -1,0 +1,57 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter
+import time
+
+# Seed randomness for different result each run
+np.random.seed(int(time.time() * 1000) % 2**32)
+
+# Image dimensions
+width, height = 512, 512
+image = np.zeros((height, width))
+
+# Parameters
+black_hole_radius = 45  # pixels
+gravitational_bending_radius = 180  # lensing zone
+center_x, center_y = width // 2, height // 2
+
+# Simulate image with relativistic jet-like swirl and blur
+for y in range(height):
+    for x in range(width):
+        dx = x - center_x
+        dy = y - center_y
+        r = np.sqrt(dx**2 + dy**2)
+
+        if r < black_hole_radius:
+            brightness = 0
+        elif black_hole_radius <= r < gravitational_bending_radius:
+            angle = np.arctan2(dy, dx)
+
+            # Bright crescent: relativistic beaming
+            beaming = 1 + 0.8 * np.cos(angle - np.pi/4)
+            beaming = np.clip(beaming, 0.5, 2.5)
+
+            # Ring structure and fading
+            ring = np.exp(-((r - 90) ** 2) / 1000)
+
+            # Swirl effect for jet hint
+            swirl = 0.9 + 0.2 * np.sin(3 * angle + r / 25)
+            noise = np.random.normal(0, 0.02)
+
+            brightness = beaming * ring * swirl + noise
+            brightness = np.clip(brightness, 0, 1)
+        else:
+            brightness = 0
+
+        image[y, x] = brightness
+
+# Apply blur kernel to simulate radio fuzziness
+image = gaussian_filter(image, sigma=3.5)
+
+# Plot
+plt.figure(figsize=(6, 6))
+plt.imshow(image, cmap='inferno', interpolation='bilinear', origin='lower', vmin=0, vmax=1)
+plt.axis('off')
+plt.gca().set_facecolor('black')
+plt.tight_layout()
+plt.show()
